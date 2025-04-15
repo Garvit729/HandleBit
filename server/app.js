@@ -1,7 +1,16 @@
 import express from "express";
+import adminRoutes from "./routes/adminRoutes.js";
 //middleware
 dotenv.config();
 const app = express();
+app.use(express.json());
+
+
+
+// ROUTES
+
+
+app.use("/admin", adminRoutes);
 // MONGOOSE Setup
 
 const PORT = process.env.PORT ;
