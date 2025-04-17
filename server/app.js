@@ -1,8 +1,13 @@
 import express from "express";
 import adminRoutes from "./routes/adminRoutes.js";
+import bodyParser from "body-parser";
+import mongoose from "mongoose";
+import cors from "cors";
+import dotenv from "dotenv";
 //middleware
 dotenv.config();
 const app = express();
+app.use(cookieParser());
 app.use(express.json());
 
 
