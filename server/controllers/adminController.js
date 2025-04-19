@@ -23,4 +23,18 @@ export const verifyAdmin = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+//@desc     logout user
+//@route    POST /admin/logout
+//@access   Public
+export const logout = async (req, res) => {
+  try {
+    res.cookie("jwt", "", {
+      httpOnly: true,
+      expires: new Date(0),
+    });
+    res.status(200).json({ message: "User Logged Out" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
