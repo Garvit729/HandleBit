@@ -142,4 +142,138 @@ export const deleteConvenor = async (req, res) => {
     res.status(500).json({ error: error.message, msg: error.message });
   }
 };
+//@desc     add a new member
+//@route    POST /admin/addMember
+//@access   private {admin,convenor}
+export const addMember = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const {
+      memberName,
+      memberEmail,
+      memberPassword,
+      committeeId,
+      committeeName,
+      role,
+      mobile,
+    } = req.body;
+    const lcEmail = memberEmail.toLowerCase();
+
+    const user = await Admin.findOne({ email: lcEmail });
+    if (user) {
+      res.status(400).json({ msg: "Email already exits" });
+    } else {
+      const salt = await bcrypt.genSalt();
+      const passwordHash = await bcrypt.hash(memberPassword, salt);
+      const newMember = new Admin({
+        email: lcEmail,
+        password: passwordHash,
+        name: memberName,
+        role,
+        committeeName,
+        committeeId,
+        mobile,
+      });
+      const savedMember = await newMember.save();
+      res.status(201).json({ savedMember });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+//@desc     get list of members
+//@route    GET /admin/members
+//@access   private {admin}
+export const getMembers = async (req, res) => {
+  try {
+    const members = await Admin.find({ role: "member" }).select("-password");
+    res.status(200).json(members);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+//@desc     delete a  member
+//@route    POST /admin/deleteMember
+//@access   private {admin,convenor}
+export const deleteMember = async (req, res) => {
+  try {
+    const { memberId } = req.body;
+    const deletedMember = await Admin.deleteOne({ _id: memberId });
+    if (deletedMember) {
+      res.status(201).json({ msg: "Deleted Successfully" });
+    } else {
+      res.status(500).json({ error: error.message });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+//@desc     get list of members of a particular committee
+//@route    POST /admin/committeeMembers
+//@access   private {convenor, member}
+export const getCommitteeMembers = async (req, res) => {
+  try {
+    const { committeeId } = req.body;
+    const filter = { committeeId: committeeId };
+    const committeeMembers = await Admin.find(filter).select("-password");
+    if (committeeMembers.length === 0) {
+      return res.status(404).json({
+        message: "No committee members found for the given committee ID",
+      });
+    }
+    res.status(200).json(committeeMembers);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Something went wrong. Please try again later." });
+  }
+};
+
+//@desc     changed password
+//@route    POST /admin/changePassword
+//@access   private {admin, convenor, member}
+export const changePassword = async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const { currentPassword, newPassword, cNewPassword, userId } = req.body;
+
+    const user = await Admin.findOne({ _id: userId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: "Current Password is Not Valid!" });
+    }
+
+    if (newPassword !== cNewPassword) {
+      return res.status(400).json({ msg: "New Passwords do not match!" });
+    }
+
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(newPassword, salt);
+    const filter = { _id: userId };
+    const update = {
+      password: passwordHash,
+    };
+    const updatedUser = await Admin.findOneAndUpdate(filter, update, {
+      new: true,
+    });
+    res.status(201).json({ msg: "Password Changed Successfully" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ error: "Something went wrong. Please try again later." });
+  }
+};
 
