@@ -25,7 +25,8 @@ export const checkRole = (roles) => {
       } catch (error) {
         return res.status(401).send("Not Authorized");
       }
-    } else {
+    } 
+    else {
       return res.status(401).send("Not Authorized, No Token");
     }
   };
